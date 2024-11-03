@@ -1,6 +1,7 @@
 import axios, { AxiosError } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_URL } from '@env';
+import { API_URL } from '../config/apiConfig';
+
 
 interface AuthResponse {
   username: string;
@@ -33,7 +34,6 @@ export const forgotPassword = async (email: string) => {
     }
   }
 };
-
 
 export const login = async (identifier: string, password: string) => { // updated parameter
   try {

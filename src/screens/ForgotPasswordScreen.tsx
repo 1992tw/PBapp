@@ -1,38 +1,31 @@
-// ForgotPasswordScreen.tsx
-
 import React, { useState } from 'react';
 import { View, TextInput, Button, Alert, StyleSheet, Text } from 'react-native';
-import { forgotPassword } from '../services/authService'; // You'll need to create this function
+import { forgotPassword } from '../services/authService';
 import { useNavigation } from '@react-navigation/native';
-import { RootStackNavigationProp } from '../navigation/types'; // Import your navigation type
+import { RootStackNavigationProp } from '../navigation/types';
 
 const ForgotPasswordScreen = () => {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
-  const navigation = useNavigation<RootStackNavigationProp>(); // Use the type here
+  const navigation = useNavigation<RootStackNavigationProp>();
 
-const handleForgotPassword = async () => {
-  if (!email) {
-    Alert.alert('Error', 'Please enter your email.');
-    return;
-  }
+  const handleForgotPassword = async () => {
+    if (!email) {
+      Alert.alert('Error', 'Please enter your email.');
+      return;
+    }
 
-  setLoading(true);
-  try {
-    await forgotPassword(email);
-    Alert.alert('Success', 'Check your email for a reset link.');
-    navigation.navigate({
-  name: 'ResetPassword',
-  params: { token: '' }, 
-});
- // Navigate to the reset screen
-  } catch (error) {
-    Alert.alert('Error', (error as Error).message || 'Failed to send email.');
-  } finally {
-    setLoading(false);
-  }
-};
-
+    setLoading(true);
+    try {
+      await forgotPassword(email);
+      Alert.alert('Success', 'Check your email for a reset link.');
+      navigation.navigate('ResetPassword', { token: '' });
+    } catch (error) {
+      Alert.alert('Error', (error as Error).message || 'Failed to send email.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -45,8 +38,8 @@ const handleForgotPassword = async () => {
       />
       <Button title="Send Reset Link" onPress={handleForgotPassword} disabled={loading} />
       <View style={styles.loginContainer}>
-        <Text>Remember your password? </Text>
-        <Button title="Login" onPress={() => navigation.navigate('Login')} /> {/* Correct usage */}
+        <Text>Remember your password?</Text>
+        <Button title="Login" onPress={() => navigation.navigate('Login')} />
       </View>
     </View>
   );
