@@ -13,7 +13,7 @@ interface AuthResponse {
 
 export const resetPassword = async (resetCode: string, password: string) => {
   try {
-    await axios.post(`${API_URL}/reset-password`, { newPassword: password, resetCode });
+    await axios.post(`${API_URL}/user/reset-password`, { newPassword: password, resetCode });
   } catch (error) {
     if (axios.isAxiosError(error)) {
       throw new Error(error.response?.data.message || 'Failed to reset password.');
@@ -25,7 +25,7 @@ export const resetPassword = async (resetCode: string, password: string) => {
 
 export const forgotPassword = async (email: string) => {
   try {
-    await axios.post(`${API_URL}/forgot-pass`, { email });
+    await axios.post(`${API_URL}/user/forgot-pass`, { email });
   } catch (error) {
     if (axios.isAxiosError(error)) {
       throw new Error(error.response?.data.message || 'Failed to send email.');
@@ -36,8 +36,9 @@ export const forgotPassword = async (email: string) => {
 };
 
 export const login = async (identifier: string, password: string) => { // updated parameter
+  console.log(`${API_URL}/user/login`);
   try {
-    const response = await axios.post<AuthResponse>(`${API_URL}/login`, {
+    const response = await axios.post<AuthResponse>(`${API_URL}/user/login`, {
       identifier, // now accepts username or email
       password,
     });
@@ -58,12 +59,14 @@ export const login = async (identifier: string, password: string) => { // update
 };
 
 export const register = async (username: string, email: string, password: string) => {
+  console.log(`${API_URL}/user/register`);
   try {
-    const response = await axios.post<AuthResponse>(`${API_URL}/register`, {
+    const response = await axios.post<AuthResponse>(`${API_URL}/user/register`, {
       username,
       email,
       password,
     });
+
 
     if (response.data.token) {
       await AsyncStorage.setItem('auth-token', response.data.token);
