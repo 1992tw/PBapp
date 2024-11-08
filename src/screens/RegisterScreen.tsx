@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, Button, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import { register } from '../services/authService';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 interface Props {
   navigation: any;
@@ -10,6 +11,7 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
   const emailInputRef = useRef<TextInput>(null);
   const passwordInputRef = useRef<TextInput>(null);
@@ -49,17 +51,30 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
         onSubmitEditing={() => passwordInputRef.current?.focus()}
         blurOnSubmit={false}
       />
-      <TextInput
-        ref={passwordInputRef}
-        style={styles.input}
-        placeholder="Password"
-        placeholderTextColor="#A9A9A9"
-        value={password}
-        secureTextEntry
-        onChangeText={setPassword}
-        returnKeyType="done"
-        onSubmitEditing={handleRegister}
-      />
+      <View style={styles.passwordContainer}>
+        <TextInput
+          ref={passwordInputRef}
+          style={[styles.input, styles.passwordInput]}
+          placeholder="Password"
+          placeholderTextColor="#A9A9A9"
+          value={password}
+          secureTextEntry={!isPasswordVisible}
+          onChangeText={setPassword}
+          returnKeyType="done"
+          onSubmitEditing={handleRegister}
+        />
+        <TouchableOpacity
+          onPressIn={() => setIsPasswordVisible(true)}
+          onPressOut={() => setIsPasswordVisible(false)}
+          style={styles.iconContainer}
+        >
+          <Icon
+            name={isPasswordVisible ? 'eye-off' : 'eye'}
+            size={24}
+            color="#A9A9A9"
+          />
+        </TouchableOpacity>
+      </View>
       <Button title="Register" onPress={handleRegister} />
     </View>
   );
@@ -83,6 +98,24 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     paddingLeft: 8,
     borderRadius: 4,
+  },
+  passwordContainer: {
+    position: 'relative',
+    width: '100%',
+    marginBottom: 12,
+  },
+  passwordInput: {
+    height: 40,
+    borderColor: 'gray',
+    borderWidth: 1,
+    paddingLeft: 8,
+    paddingRight: 40, // Add some padding to the right to make space for the icon
+    borderRadius: 4,
+  },
+  iconContainer: {
+    position: 'absolute',
+    right: 10,
+    top: 8,
   },
 });
 
