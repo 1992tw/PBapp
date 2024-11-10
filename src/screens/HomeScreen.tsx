@@ -107,8 +107,10 @@ const renderEventItem = ({ item }: { item: any }) => {
 
   return (
     <View style={styles.eventItem}>
+      {/* Display the eventType in larger font */}
+      <Text style={styles.eventType}>{item.eventType}</Text> 
+
       <Text style={styles.eventText}>Date: {new Date(item.date).toLocaleDateString()}</Text>
-      <Text style={styles.eventText}>Type: {item.eventType}</Text>
       <Text style={styles.eventText}>Address: {item.address}</Text>
       <Text style={styles.eventText}>Weather: {item.weather}</Text>
       <Text style={styles.eventText}>Fees: ${item.fees}</Text>
@@ -122,6 +124,7 @@ const renderEventItem = ({ item }: { item: any }) => {
     </View>
   );
 };
+
 
 
   return (
@@ -146,6 +149,15 @@ const styles = StyleSheet.create({
   eventItem: { padding: 16, borderBottomWidth: 1, borderBottomColor: '#ccc' },
   eventText: { fontSize: 16 },
   joinedText: { color: 'green', fontWeight: 'bold' },
+
+  // New style for eventType
+  eventType: {
+    fontSize: 24, // Larger font size for eventType
+    fontWeight: 'bold', // Optional: Makes the eventType bold
+    color: '#000', // You can change the color if needed
+    marginBottom: 8, // Spacing to separate the eventType from other details
+  },
 });
+
 
 export default HomeScreen;
