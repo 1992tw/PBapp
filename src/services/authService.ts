@@ -2,9 +2,9 @@ import axios, { AxiosError } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '../config/apiConfig';
 
-
 interface AuthResponse {
   username: string;
+  userId: string; // Added userId
   message: string;
   token?: string;
 }
@@ -35,7 +35,7 @@ export const forgotPassword = async (email: string) => {
   }
 };
 
-export const login = async (identifier: string, password: string) => { // updated parameter
+export const login = async (identifier: string, password: string) => {
   console.log(`${API_URL}/user/login`);
   try {
     const response = await axios.post<AuthResponse>(`${API_URL}/user/login`, {
@@ -43,9 +43,11 @@ export const login = async (identifier: string, password: string) => { // update
       password,
     });
 
+    // If token is returned, save user details in AsyncStorage
     if (response.data.token) {
       await AsyncStorage.setItem('auth-token', response.data.token);
       await AsyncStorage.setItem('username', response.data.username);
+      await AsyncStorage.setItem('userId', response.data.userId); // Save userId
     }
 
     return response.data;
@@ -67,10 +69,11 @@ export const register = async (username: string, email: string, password: string
       password,
     });
 
-
+    // If token is returned, save user details in AsyncStorage
     if (response.data.token) {
       await AsyncStorage.setItem('auth-token', response.data.token);
       await AsyncStorage.setItem('username', username);
+      await AsyncStorage.setItem('userId', response.data.userId); // Save userId
     }
 
     return response.data;
@@ -86,9 +89,10 @@ export const register = async (username: string, email: string, password: string
 export const logout = async () => {
   await AsyncStorage.removeItem('auth-token');
   await AsyncStorage.removeItem('username');
+  await AsyncStorage.removeItem('userId'); // Remove userId on logout
 };
 
 export const isLoggedIn = async () => {
   const token = await AsyncStorage.getItem('auth-token');
-  return !!token;
+  return !!token; // Checks if a token exists, implying the user is logged in
 };
