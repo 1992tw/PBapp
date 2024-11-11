@@ -7,12 +7,14 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "start:dev": "ENVFILE=.env.development expo start",
-    "start:prod": "ENVFILE=.env.production expo start"
+    "start:dev": "npm cache clean --force && react-native start --reset-cache",
+    "start:prod": "ENVFILE=.env.production expo start",
+    "clean": "rimraf node_modules/ && npm cache clean --force && rm -rf package-lock.json && rm -rf .expo && rm -rf .react-native && echo 'Cleaned project!' && npm install && npm run start:dev"
   },
   "dependencies": {
     "@expo/metro-runtime": "~3.2.3",
     "@react-native-async-storage/async-storage": "^1.23.1",
+    "@react-native-community/datetimepicker": "^8.2.0",
     "@react-native-community/masked-view": "^0.1.11",
     "@react-native-community/netinfo": "^11.3.1",
     "@react-navigation/bottom-tabs": "^6.6.1",
@@ -22,6 +24,7 @@
     "expo-notifications": "^0.28.19",
     "expo-status-bar": "~1.12.1",
     "react": "18.2.0",
+    "react-datepicker": "^7.5.0",
     "react-dom": "18.2.0",
     "react-native": "0.74.5",
     "react-native-device-info": "^14.0.0",

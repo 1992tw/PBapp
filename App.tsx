@@ -11,6 +11,8 @@ import MapScreen from './src/screens/MapScreen';
 import ForgotPasswordScreen from './src/screens/ForgotPasswordScreen';
 import ResetPasswordScreen from './src/screens/ResetPasswordScreen';
 import { isLoggedIn } from './src/services/authService';
+import CreateEventScreen from './src/screens/CreateEventScreen';
+import EditEventScreen from './src/screens/EditEventScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -55,6 +57,8 @@ const App = () => {
         <Stack.Screen name="Register" component={RegisterScreen} />
         <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
         <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+        <Stack.Screen name="CreateEvent" component={CreateEventScreen} />
+      <Stack.Screen name="EditEvent" component={EditEventScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

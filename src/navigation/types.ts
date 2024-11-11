@@ -12,6 +12,8 @@ export type RootStackParamList = {
   Weather: undefined;
   Messages: undefined;
   Register: undefined;
+  EditEvent: { eventId: string };
+  CreateEvent: undefined;
 };
 
 // Define the type of route parameters

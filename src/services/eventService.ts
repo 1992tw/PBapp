@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { API_URL } from '../config/apiConfig'; // Assuming API_URL is defined in your config file
 
+
 // Function to retrieve username from AsyncStorage
 export const getUsername = async (): Promise<string | null> => {
   const storedUsername = await AsyncStorage.getItem('username');
@@ -14,49 +15,151 @@ export const capitalizeFirstLetter = (string: string | null): string => {
   return string.charAt(0).toUpperCase() + string.slice(1);
 };
 
-// Function to fetch events from the API
-export const fetchEvents = async (token: string | null, userId: string | null): Promise<any[]> => {
+// Function to fetch upcoming events
+export const fetchEvents = async (token: string, userId: string) => {
   try {
-    const response = await axios.get(`${API_URL}/events/upcoming`, {
+    // Ensure token is passed in the headers
+    const response = await axios.get(`${API_URL}/events/${userId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    
+    console.log('Events fetched:', response.data); // Log response for debugging
+
+    return response.data; // Assuming response.data contains the events
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('Failed to fetch events:', error.response?.data || error.message);
+    } else {
+      console.error('Failed to fetch events:', error);
+    }
+    throw error; // Throw error to be caught in component
+  }
+};
+
+
+
+// Function to fetch event history (past events the user joined)
+export const fetchEventHistory = async (token: string | null): Promise<any[]> => {
+  try {
+    const response = await axios.get(`${API_URL}/events/history/joined`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     });
 
-    // Check if response.data.events is an array before filtering
-    if (Array.isArray(response.data.events)) {
-      // Filter events: If public is false, check if the user is in the invitedPlayers array
-      const filteredEvents = response.data.events.filter((event: any) => {
-        if (!event.public && !event.invitedPlayers.includes(userId)) {
-          return false; // Exclude private events unless invited
-        }
-        return true;
-      });
-      return filteredEvents;
-    } else {
-      console.error('Error: Expected "events" array but got:', response.data);
-      return []; // Return an empty array if "events" is not in the expected format
-    }
+    return response.data.history || [];
   } catch (error) {
-    console.error('Failed to fetch events:', error);
-    return []; // Return an empty array if the request fails
+    console.error('Failed to fetch event history:', error);
+    return []; // Return empty array if failed
   }
 };
 
-// Function to join an event
-export const joinEvent = async (eventId: string, token: string | null): Promise<boolean> => {
+
+export const getEventById = async (eventId: any, token: string) => {
   try {
-    // Ensure token is available, if not return false
+    const response = await axios.get(`${API_URL}/events/details/${eventId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data; // Ensure this returns the event object
+  } catch (error) {
+    throw new Error('Failed to fetch event');
+  }
+};
+
+
+// Edit an event
+export const editEvent = async (
+
+  eventId: string,
+
+  eventData: {
+
+    eventType: string;
+
+    dateString: string;
+
+    address: string;
+
+    fees: number;
+
+    weather: string;
+
+    indoor: boolean;
+
+    public: boolean;
+
+    updatedDate: string; // Add updatedDate property
+
+  },
+
+  token: string) => {
+  try {
+    const response = await axios.put(
+      `${API_URL}/events/edit/${eventId}`,
+      eventData,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    throw new Error('Failed to update event');
+  }
+};
+
+export const createEvent = async (eventData: {
+  eventType: string;
+  dateString: string;
+  address: string;
+  fees: number;
+  weather: string;
+  indoor: boolean;
+  public: boolean;
+}, token: string | null): Promise<boolean> => {
+  try {
     if (!token) {
       console.error("No token provided");
       return false;
     }
 
-    // Make the POST request with the eventId in the URL and Authorization header
+    const response = await axios.post(`${API_URL}/events/create`, eventData, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (response.data.success) {
+      return true;
+    } else {
+      console.error("Failed to create event", response.data);
+      return false;
+    }
+  } catch (error) {
+    console.error("Failed to create event:", error);
+    return false;
+  }
+};
+
+
+// Function to join an event
+export const joinEvent = async (eventId: string, token: string | null): Promise<boolean> => {
+  try {
+    if (!token) {
+      console.error("No token provided");
+      return false;
+    }
+
     const response = await axios.post(`${API_URL}/events/join/${eventId}`, {}, {
       headers: {
-        Authorization: `Bearer ${token}`, // Add the Authorization token here
-        "Content-Type": "application/json", // Optional: to make sure content-type is JSON
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
       },
     });
 
@@ -71,5 +174,3 @@ export const joinEvent = async (eventId: string, token: string | null): Promise<
     return false;
   }
 };
-
-
