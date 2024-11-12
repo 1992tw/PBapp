@@ -15,6 +15,23 @@ export const capitalizeFirstLetter = (string: string | null): string => {
   return string.charAt(0).toUpperCase() + string.slice(1);
 };
 
+// Function to fetch user details by userId
+export const getUserById = async (userId: string, token: string): Promise<{ username: string }> => {
+  try {
+    const response = await axios.get(`${API_URL}/user/${userId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    return response.data; // Assuming response.data contains { username }
+  } catch (error) {
+    console.error("Failed to fetch user by ID:", error);
+    throw new Error('Failed to fetch user details');
+  }
+};
+
+
 // Function to fetch upcoming events
 export const fetchEvents = async (token: string, userId: string) => {
   try {
