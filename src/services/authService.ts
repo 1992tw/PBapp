@@ -36,7 +36,6 @@ export const forgotPassword = async (email: string) => {
 };
 
 export const login = async (identifier: string, password: string) => {
-  console.log(`${API_URL}/user/login`);
   try {
     const response = await axios.post<AuthResponse>(`${API_URL}/user/login`, {
       identifier, // now accepts username or email
@@ -61,7 +60,6 @@ export const login = async (identifier: string, password: string) => {
 };
 
 export const register = async (username: string, email: string, password: string) => {
-  console.log(`${API_URL}/user/register`);
   try {
     const response = await axios.post<AuthResponse>(`${API_URL}/user/register`, {
       username,

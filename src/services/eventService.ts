@@ -15,21 +15,44 @@ export const capitalizeFirstLetter = (string: string | null): string => {
   return string.charAt(0).toUpperCase() + string.slice(1);
 };
 
-// Function to fetch user details by userId
+// In-memory cache with expiration time (e.g., 1 hour)
+const userCache: { [key: string]: { username: string; timestamp: number } } = {};
+const CACHE_EXPIRY_TIME = 60 * 60 * 1000; // 1 hour in milliseconds
 export const getUserById = async (userId: string, token: string): Promise<{ username: string }> => {
+  const currentTime = Date.now();
+  
+  // Try to fetch user data from localStorage
+  const storedUser = await AsyncStorage.getItem(`user-${userId}`);
+  if (storedUser) {
+    const { data, timestamp } = JSON.parse(storedUser);
+    
+    // Check if cached data is still valid
+    if (currentTime - timestamp < CACHE_EXPIRY_TIME) {
+      return data; // Return the cached data if valid
+    }
+  }
+
+  // If no valid cached data, make an API request
   try {
     const response = await axios.get(`${API_URL}/user/${userId}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { Authorization: `Bearer ${token}` },
     });
 
-    return response.data; // Assuming response.data contains { username }
+    const userData = response.data;
+
+    // Store the fetched data with a timestamp
+    await AsyncStorage.setItem(
+      `user-${userId}`,
+      JSON.stringify({ data: userData, timestamp: currentTime })
+    );
+
+    return userData;
   } catch (error) {
-    console.error("Failed to fetch user by ID:", error);
+    console.error('Failed to fetch user by ID:', error);
     throw new Error('Failed to fetch user details');
   }
 };
+
 
 
 // Function to fetch upcoming events
@@ -41,9 +64,6 @@ export const fetchEvents = async (token: string, userId: string) => {
         Authorization: `Bearer ${token}`,
       },
     });
-    
-    console.log('Events fetched:', response.data); // Log response for debugging
-
     return response.data; // Assuming response.data contains the events
   } catch (error) {
     if (axios.isAxiosError(error)) {
