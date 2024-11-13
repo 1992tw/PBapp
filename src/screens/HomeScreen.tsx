@@ -14,7 +14,9 @@ const HomeScreen = () => {
   const [username, setUsername] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [events, setEvents] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(false);  // New state to track loading status
+  const [isLoading, setIsLoading] = useState(false); // Loading state
+  const [creatorUsernames, setCreatorUsernames] = useState<{ [key: string]: string }>({}); // Cache for creator usernames
+  const [joinedPlayerUsernames, setJoinedPlayerUsernames] = useState<{ [key: string]: string[] }>({}); // Cache for joined players' usernames
 
   // Fetch username and userId from AsyncStorage
   const getUserData = async () => {
@@ -25,37 +27,40 @@ const HomeScreen = () => {
   };
 
   // Function to fetch upcoming events
-  const fetchEvents = async () => {
-    if (isLoading) return;  // Avoid fetching if already in progress
+const fetchEvents = async () => {
+  if (isLoading) return;  // Avoid fetching if already in progress
 
-    try {
-      setIsLoading(true);  // Set loading state to true before the request
-      const token = await AsyncStorage.getItem('auth-token');
-      const response = await axios.get(`${API_URL}/events/upcoming`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+  try {
+    setIsLoading(true);  // Set loading state to true before the request
+    const token = await AsyncStorage.getItem('auth-token');
+    const response = await axios.get(`${API_URL}/events/upcoming`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
 
-      // For each event, fetch the usernames of the joined players
-      const upcomingEvents = await Promise.all(response.data.events.map(async (event: any) => {
-        const joinedPlayerUsernames = await Promise.all(
-          event.joinedPlayers.map(async (playerId: string) => {
-            if (token) {
-              const playerData = await getUserById(playerId, token);
-              return playerData.username;
-            }
-            return '';
-          })
-        );
-        return { ...event, joinedPlayerUsernames };
-      }));
+    // For each event, fetch the username of the createdBy user
+    const upcomingEvents = await Promise.all(response.data.events.map(async (event: any) => {
+      const createdByUser = await getUserById(event.createdBy, token); // Fetch the user data
+      const joinedPlayerUsernames = await Promise.all(
+        event.joinedPlayers.map(async (playerId: string) => {
+          if (token) {
+            const playerData = await getUserById(playerId, token);
+            return playerData.username;
+          }
+          return '';
+        })
+      );
+      return { ...event, createdByUsername: createdByUser.username, joinedPlayerUsernames };
+    }));
 
-      setEvents(upcomingEvents);  // Set the events with usernames
-    } catch (error) {
-      console.error('Failed to fetch events:', error);
-    } finally {
-      setIsLoading(false);  // Reset loading state after request completes
-    }
-  };
+    setEvents(upcomingEvents);  // Set the events with usernames
+  } catch (error) {
+    console.error('Failed to fetch events:', error);
+  } finally {
+    setIsLoading(false);  // Reset loading state after request completes
+  }
+};
+
+
 
   // Fetch user data and events when the component mounts or when navigating back
   useEffect(() => {
@@ -91,21 +96,37 @@ const HomeScreen = () => {
   };
 
   // Function to handle "Join" button click
-  const handleJoinEvent = async (eventId: string) => {
-    const token = await AsyncStorage.getItem('auth-token');
-    if (token) {
-      try {
-        await axios.post(`${API_URL}/events/join/${eventId}`, {}, {
-          headers: { Authorization: `Bearer ${token}` },
+const handleJoinEvent = async (eventId: string) => {
+  const token = await AsyncStorage.getItem('auth-token');
+  if (token) {
+    try {
+      // First, send the join request to the API
+      await axios.post(`${API_URL}/events/join/${eventId}`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      // Once the user has joined, find the event and add the user to the joined players list
+      const username = await AsyncStorage.getItem('username');
+      setEvents((prevEvents) => {
+        return prevEvents.map((event) => {
+          if (event._id === eventId) {
+            // Add the current user's username to the event's joined players list
+            return {
+              ...event,
+              joinedPlayerUsernames: [...event.joinedPlayerUsernames, username],
+            };
+          }
+          return event;
         });
-        fetchEvents();  // Reload events after joining
-      } catch (error) {
-        Alert.alert('Error', 'Failed to join the event');
-      }
-    } else {
-      Alert.alert('Error', 'You need to be logged in');
+      });
+    } catch (error) {
+      Alert.alert('Error', 'Failed to join the event');
     }
-  };
+  } else {
+    Alert.alert('Error', 'You need to be logged in');
+  }
+};
+
 
   // Function to handle "Edit" button click
   const handleEditEvent = (eventId: string) => {
@@ -119,64 +140,78 @@ const HomeScreen = () => {
   };
 
   // Render each event item
-  const renderEventItem = ({ item }: { item: any }) => {
-    const isJoined = item.joinedPlayers.includes(userId);
-    const isOwner = item.createdBy === userId;
+const renderEventItem = ({ item }: { item: any }) => {
+  const isJoined = item.joinedPlayers.includes(userId);
+  const isOwner = item.createdBy === userId;
 
-    return (
-      <View style={styles.eventItem}>
-        {/* Event details */}
-        <Text style={styles.eventType}>{item.eventType}</Text>
-        <Text style={styles.eventText}>
-          Date: {new Date(item.date).toLocaleDateString()} {new Date(item.date).toLocaleTimeString()}
-        </Text>
-        <Text style={styles.eventText}>Address: {item.address}</Text>
-        <Text style={styles.eventText}>Weather: {item.weather}</Text>
-        <Text style={styles.eventText}>Fees: ${item.fees}</Text>
-        <Text style={styles.eventText}>{item.indoor ? 'Indoor Event' : 'Outdoor Event'}</Text>
-        <Text style={styles.eventText}>{item.public ? 'Public Event' : 'Private Event'}</Text>
+  return (
+    <View style={styles.eventItem}>
+      {/* Event type */}
+      <Text style={styles.eventType}>{item.eventType}</Text>
 
-        {/* Display joined players */}
-        {item.joinedPlayerUsernames.length > 0 ? (
-          <View style={styles.joinedPlayersContainer}>
-            <Text style={styles.eventText}>
-              {item.joinedPlayerUsernames.length === 1
-                ? '1 Player Joined:'
-                : `${item.joinedPlayerUsernames.length} Players Joined:`}
-            </Text>
-            {item.joinedPlayerUsernames.map((username: string, index: number) => (
-              <Text key={index} style={styles.joinedPlayerName}>{username}</Text>
-            ))}
-          </View>
-        ) : (
-          <Text style={styles.eventText}>No players have joined yet</Text>
-        )}
+      {/* Event details */}
+      <Text style={styles.eventText}>
+        Date: {new Date(item.date).toLocaleDateString()} {new Date(item.date).toLocaleTimeString()}
+      </Text>
+      <Text style={styles.eventText}>Address: {item.address}</Text>
+      <Text style={styles.eventText}>Weather: {item.weather}</Text>
+      <Text style={styles.eventText}>Fees: ${item.fees}</Text>
+      <Text style={styles.eventText}>{item.indoor ? 'Indoor Event' : 'Outdoor Event'}</Text>
+      <Text style={styles.eventText}>{item.public ? 'Public Event' : 'Private Event'}</Text>
 
-        {/* Comments */}
-        {item.comments.length > 0 ? (
-          <View style={styles.commentsContainer}>
-            <Text style={styles.eventText}>Comments:</Text>
-            {item.comments.map((comment: any, index: number) => (
-              <View key={index} style={styles.commentContainer}>
-                <Text style={styles.commentUsername}>{comment.username}:</Text>
-                <Text style={styles.commentText}>{comment.comment}</Text>
-              </View>
-            ))}
-          </View>
-        ) : (
-          <Text style={styles.eventText}>No comments yet</Text>
-        )}
+      {/* Created by and date */}
+      <Text style={styles.eventText}>Created by: {item.createdByUsername}</Text>
+      <Text style={styles.eventText}>Created on: {new Date(item.createdDate).toLocaleString()}</Text>
+      <Text style={styles.eventText}>Last updated: {new Date(item.updatedDate).toLocaleString()}</Text>
 
-        {/* Join or Edit buttons */}
-        {isJoined ? (
-          <Text style={styles.joinedText}>Joined</Text>
-        ) : (
-          <Button title="Join" onPress={() => handleJoinEvent(item._id)} />
-        )}
-        {isOwner && <Button title="Edit" onPress={() => handleEditEvent(item._id)} />}
-      </View>
-    );
-  };
+      {/* Notification status */}
+      <Text style={styles.eventText}>
+        Notification Sent: {item.notificationSent ? 'Yes' : 'No'}
+      </Text>
+
+      {/* Display joined players */}
+      {item.joinedPlayerUsernames.length > 0 ? (
+        <View style={styles.joinedPlayersContainer}>
+          <Text style={styles.eventText}>
+            {item.joinedPlayerUsernames.length === 1
+              ? `1 Player Joined: ${item.joinedPlayerUsernames[0]}`
+              : `${item.joinedPlayerUsernames.length} Players Joined:`}
+          </Text>
+          {item.joinedPlayerUsernames.map((username: string, index: number) => (
+            <Text key={index} style={styles.joinedPlayerName}>{username}</Text>
+          ))}
+        </View>
+      ) : (
+        <Text style={styles.eventText}>No players have joined yet</Text>
+      )}
+
+      {/* Comments */}
+      {item.comments.length > 0 ? (
+        <View style={styles.commentsContainer}>
+          <Text style={styles.eventText}>Comments:</Text>
+          {item.comments.map((comment: any, index: number) => (
+            <View key={index} style={styles.commentContainer}>
+              <Text style={styles.commentUsername}>{comment.username}:</Text>
+              <Text style={styles.commentText}>{comment.comment}</Text>
+            </View>
+          ))}
+        </View>
+      ) : (
+        <Text style={styles.eventText}>No comments yet</Text>
+      )}
+
+      {/* Join or Edit buttons */}
+      {isJoined ? (
+        <Text style={styles.joinedText}>Joined</Text>
+      ) : (
+        <Button title="Join" onPress={() => handleJoinEvent(item._id)} />
+      )}
+      {isOwner && <Button title="Edit" onPress={() => handleEditEvent(item._id)} />}
+    </View>
+  );
+};
+
+
 
   return (
     <View style={styles.container}>
